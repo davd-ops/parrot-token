@@ -4,11 +4,11 @@ pragma solidity ^0.8.9;
 interface IParrotRewards {
   function claimReward() external;
 
-  function depositRewards() external payable;
+  function depositRewards(uint256 _amount) external;
 
-  function getLockedShares(address wallet) external view returns (uint256);
+  function getShares(address wallet) external view returns (uint256);
 
-  function lock(uint256 amount) external;
+  function deposit(uint256 amount) external;
 
-  function unlock(uint256 amount) external;
+  function withdraw(uint256 amount) external;
 }

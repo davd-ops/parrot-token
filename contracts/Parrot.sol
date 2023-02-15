@@ -1,9 +1,7 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.9;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
@@ -63,11 +61,11 @@ contract Parrot is ERC20, Ownable {
     _mint(msg.sender, 1_000_000_000 * 10**18);
 
     IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(DEX_ROUTER);
-    address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
-      .createPair(address(this), _usdc);
+    // address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
+    //   .createPair(address(this), _usdc);
     USDC = _usdc;
-    marketMakingPairs[_uniswapV2Pair] = true;
-    uniswapV2Pair = _uniswapV2Pair;
+    // marketMakingPairs[_uniswapV2Pair] = true;
+    // uniswapV2Pair = _uniswapV2Pair;
     uniswapV2Router = _uniswapV2Router;
 
     maxTxnAmount = (totalSupply() * 1) / 100; // 1% supply
@@ -76,6 +74,7 @@ contract Parrot is ERC20, Ownable {
     _feeProcessor = new FeeProcessor(address(this), USDC, DEX_ROUTER);
     _feeProcessor.transferOwnership(msg.sender);
     _rewards = new ParrotRewards(address(this));
+    _rewards.setUSDCAddress(USDC);
     _rewards.transferOwnership(msg.sender);
     _isTaxExcluded[address(this)] = true;
     _isTaxExcluded[address(_feeProcessor)] = true;
@@ -85,6 +84,7 @@ contract Parrot is ERC20, Ownable {
     isExcludedMaxTxnAmount[msg.sender] = true;
     isExcludedMaxWallet[address(this)] = true;
     isExcludedMaxWallet[address(_feeProcessor)] = true;
+    isExcludedMaxWallet[address(_rewards)] = true;
     isExcludedMaxWallet[msg.sender] = true;
   }
 

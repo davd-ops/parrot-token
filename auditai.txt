@@ -1,4 +1,0 @@
-./contracts/Parrot.sol
-./contracts/FeeProcessor.sol
-./contracts/ParrotRewards.sol
-./contracts/IParrotRewards.sol

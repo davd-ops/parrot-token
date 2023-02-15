@@ -2,7 +2,7 @@
   "scripts": {
     "chain": "hardhat node --network hardhat",
     "test": "hardhat compile && hardhat test --network hardhat",
-    "compile": "hardhat compile",
+    "compile": "hardhat compile && hardhat typechain",
     "deploy": "hardhat deploy --export-all ../react-app/src/contracts/hardhat_contracts.json",
     "generate": "hardhat generate",
     "account": "hardhat account",

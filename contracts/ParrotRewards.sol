@@ -5,30 +5,25 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "./IParrotRewards.sol";
 
-// maybe add reentrancy guard just to be sure
 contract ParrotRewards is IParrotRewards, Ownable {
-    // usdc contract interface
+    event DistributeReward(address indexed wallet, address receiver);
+    event DepositRewards(address indexed wallet, uint256 amountETH);
+
     IERC20 public usdc;
 
     address public immutable shareholderToken;
     uint256 public totalLockedUsers;
     uint256 public totalSharesDeposited;
-
-    // amount of shares a user has
-    mapping(address => uint256) public shares;
-    mapping(address => uint256) public unclaimedRewards;
-    address[] public shareHolders;
-    // reward information per user
-    mapping(address => uint256) public claimedRewards;
-
     uint256 public totalRewards;
     uint256 public totalDistributed;
 
-    uint256 private constant ACC_FACTOR = 10 ** 36;
+    uint160[] private shareHolders;
 
-    event ClaimReward(address wallet);
-    event DistributeReward(address indexed wallet, address receiver);
-    event DepositRewards(address indexed wallet, uint256 amountETH);
+    mapping(address => uint256) private shares;
+    mapping(address => uint256) private unclaimedRewards;
+    mapping(address => uint256) private claimedRewards;
+
+    uint256 private constant ACC_FACTOR = 10 ** 36;
 
     constructor(address _shareholderToken) {
         shareholderToken = _shareholderToken;
@@ -42,10 +37,6 @@ contract ParrotRewards is IParrotRewards, Ownable {
 
     function withdraw(uint256 _amount) external {
         address shareholder = msg.sender;
-        require(
-            _amount <= shares[shareholder],
-            "cannot unlock more than you have locked"
-        );
         _removeShares(shareholder, _amount);
         IERC20(shareholderToken).transfer(shareholder, _amount);
     }
@@ -55,6 +46,7 @@ contract ParrotRewards is IParrotRewards, Ownable {
         totalSharesDeposited += amount;
         shares[shareholder] += amount;
         if (sharesBefore == 0 && shares[shareholder] > 0) {
+            shareHolders.push(uint160(shareholder));
             totalLockedUsers++;
         }
     }
@@ -69,6 +61,19 @@ contract ParrotRewards is IParrotRewards, Ownable {
         totalSharesDeposited -= amount;
         shares[shareholder] -= amount;
         if (shares[shareholder] == 0) {
+            if (shareHolders.length > 1) {
+                for (uint256 i = 0; i < shareHolders.length; ) {
+                    if (shareHolders[i] == uint160(shareholder)) {
+                        shareHolders[i] = shareHolders[shareHolders.length - 1];
+                        delete shareHolders[shareHolders.length - 1];
+                    }
+                    unchecked {
+                        ++i;
+                    }
+                }
+            } else {
+                delete shareHolders[0];
+            }
             totalLockedUsers--;
         }
     }
@@ -76,11 +81,13 @@ contract ParrotRewards is IParrotRewards, Ownable {
     function depositRewards(uint256 _amount) external {
         require(totalSharesDeposited > 0, "no reward recipients");
         usdc.transferFrom(msg.sender, address(this), _amount);
-        uint256 shareCount = shareHolders.length;
+
         uint256 shareAmount = (ACC_FACTOR * _amount) / totalSharesDeposited;
-        for (uint256 i = 0; i < shareCount; ) {
-            uint256 userCut = shareAmount * shares[shareHolders[i]];
-            unclaimedRewards[shareHolders[i]] += userCut;
+        for (uint256 i = 0; i < shareHolders.length; ) {
+            uint256 userCut = shareAmount * shares[address(shareHolders[i])];
+            // Calculate the USDC equivalent of the share amount
+            uint256 usdcAmount = userCut / ACC_FACTOR;
+            unclaimedRewards[address(shareHolders[i])] += usdcAmount;
             unchecked {
                 ++i;
             }
@@ -96,25 +103,28 @@ contract ParrotRewards is IParrotRewards, Ownable {
         uint256 amount = getUnpaid(shareholder);
         if (amount > 0) {
             claimedRewards[shareholder] += amount;
-
-            usdc.transferFrom(address(this), shareholder, amount);
             totalDistributed += amount;
+            unclaimedRewards[shareholder] = 0;
+
+            usdc.transfer(shareholder, amount);
             emit DistributeReward(shareholder, shareholder);
         }
     }
 
     function claimReward() external {
         _distributeReward(msg.sender);
-        emit ClaimReward(msg.sender);
     }
 
     function setUSDCAddress(address _usdc) external onlyOwner {
         usdc = IERC20(_usdc);
     }
 
-    // returns the unpaid rewards
     function getUnpaid(address shareholder) public view returns (uint256) {
         return unclaimedRewards[shareholder];
+    }
+
+    function getClaimed(address shareholder) public view returns (uint256) {
+        return claimedRewards[shareholder];
     }
 
     function getShares(address user) external view returns (uint256) {

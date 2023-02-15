@@ -6,7 +6,7 @@
  import "@nomiclabs/hardhat-etherscan";
  import { HardhatUserConfig } from "hardhat/config";
  import "hardhat-gas-reporter";
- require("dotenv").config({ path: "../../.env" });
+ require("dotenv").config({ path: "./.env" });
  
  const config: HardhatUserConfig = {
    // Your type-safe config goes here
@@ -23,7 +23,7 @@
      coinmarketcap: process.env.COINMARKETCAP_API_KEY,
    },
      solidity: {
-      version: "0.8.16",
+      version: "0.8.9",
       settings: {
         optimizer: {
           enabled: true,

@@ -61,11 +61,11 @@ contract Parrot is ERC20, Ownable {
     _mint(msg.sender, 1_000_000_000 * 10**18);
 
     IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(DEX_ROUTER);
-    // address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
-    //   .createPair(address(this), _usdc);
+    address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
+      .createPair(address(this), _usdc);
     USDC = _usdc;
-    // marketMakingPairs[_uniswapV2Pair] = true;
-    // uniswapV2Pair = _uniswapV2Pair;
+    marketMakingPairs[_uniswapV2Pair] = true;
+    uniswapV2Pair = _uniswapV2Pair;
     uniswapV2Router = _uniswapV2Router;
 
     maxTxnAmount = (totalSupply() * 1) / 100; // 1% supply
